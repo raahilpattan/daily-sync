@@ -1,13 +1,20 @@
 # Chrome Web Store submission kit
 
+**Web Store item ID:** `mngaablooeddihemfdmhdjncdkfdkpdf`
+**Store build command:**
+```
+powershell -ExecutionPolicy Bypass -File scripts\build-store.ps1 -ClientId 889622447436-hd0hlr0esblum65nb9snhouqe2muevku.apps.googleusercontent.com
+```
+Bump `"version"` in `manifest.json` before each new upload.
+
 Copy-paste material for the Developer Dashboard (https://chrome.google.com/webstore/devconsole).
 
 ## Store listing
 
 **Name:** Daily Sync
 
-**Summary** (≤132 chars):
-> Track today's Wordle, Connections, Strands, Mini, Globle, Worldle and Krillion at a glance, and compare progress with friends.
+**Summary** (≤132 chars). The store reads this from `"description"` in `manifest.json`, so change it there and re-upload:
+> Automatically track your daily puzzle progress, stay organized, and compare results with friends.
 
 **Category:** Fun (alternative: Productivity)
 
