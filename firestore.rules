@@ -1,0 +1,55 @@
+rules_version = '2';
+
+// Deploy: Firebase console → Firestore Database → Rules → paste → Publish
+//     (or `firebase deploy --only firestore:rules`).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isMe(uid) { return signedIn() && request.auth.uid == uid; }
+    // True when `owner` has added the requester as a friend.
+    function addedMe(owner) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/users/$(owner)/friends/$(request.auth.uid));
+    }
+
+    match /users/{uid} {
+      allow read: if isMe(uid) || addedMe(uid);
+      allow create, update: if isMe(uid) && request.resource.data.uid == uid;
+      allow delete: if isMe(uid);
+
+      // People this user has added. Private to the owner.
+      match /friends/{friendUid} {
+        allow read, delete: if isMe(uid);
+        allow create, update: if isMe(uid) && friendUid != uid;
+      }
+
+      // Daily progress: visible to the owner and anyone the owner has added.
+      match /dailyStats/{date} {
+        allow read: if isMe(uid) || addedMe(uid);
+        allow write: if isMe(uid)
+          && request.resource.data.count is int
+          && request.resource.data.count >= 0
+          && request.resource.data.count <= 20;
+      }
+    }
+
+    // Exact-match lookups only (get, never list), so codes/emails can't be enumerated.
+    match /friendCodes/{code} {
+      allow get: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn() && resource.data.uid == request.auth.uid
+                    && request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /emailIndex/{email} {
+      allow get: if signedIn();
+      // You can only register your own (verified Google) email.
+      allow create, update: if signedIn()
+        && email == request.auth.token.email.lower()
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+  }
+}

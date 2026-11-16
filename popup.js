@@ -1,4 +1,5 @@
 import { GAMES, STATE_KEY, todayISO, nextMidnight, freshOrEmpty, emptyState } from './shared/games.js';
+import { activateFriends, onLocalProgressChanged } from './friends.js';
 
 const $ = (id) => document.getElementById(id);
 const list = $('game-list');
@@ -140,7 +141,48 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local' || !changes[STATE_KEY]) return;
   state = freshOrEmpty(changes[STATE_KEY].newValue);
   render();
+  onLocalProgressChanged();
 });
+
+// ---------- Tabs ----------
+const TABS = ['games', 'friends'];
+let activeTab = 'games';
+
+function selectTab(name, { animate = true } = {}) {
+  if (!TABS.includes(name)) name = 'games';
+  const prev = activeTab;
+  activeTab = name;
+  document.querySelector('.tabs').dataset.active = name;
+
+  for (const t of TABS) {
+    const tab = $(`tab-${t}`);
+    const panel = $(`panel-${t}`);
+    const on = t === name;
+    tab.setAttribute('aria-selected', String(on));
+    tab.tabIndex = on ? 0 : -1;
+    panel.hidden = !on;
+    panel.classList.remove('enter-left', 'enter-right');
+    if (on && animate && prev !== name) {
+      void panel.offsetWidth; // restart the CSS animation
+      panel.classList.add(TABS.indexOf(name) > TABS.indexOf(prev) ? 'enter-right' : 'enter-left');
+    }
+  }
+  try { localStorage.setItem('popup-tab', name); } catch { /* storage unavailable */ }
+  if (name === 'friends') activateFriends();
+}
+
+for (const t of TABS) $(`tab-${t}`).addEventListener('click', () => selectTab(t));
+document.querySelector('.tabs').addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const i = TABS.indexOf(activeTab) + (e.key === 'ArrowRight' ? 1 : -1);
+  const next = TABS[(i + TABS.length) % TABS.length];
+  selectTab(next);
+  $(`tab-${next}`).focus();
+});
+
+let savedTab = 'games';
+try { savedTab = localStorage.getItem('popup-tab') || 'games'; } catch { /* storage unavailable */ }
+selectTab(savedTab, { animate: false });
 
 render();
 tick();

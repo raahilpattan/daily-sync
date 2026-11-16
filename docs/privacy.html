@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy · Daily Games Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <h1>Privacy Policy</h1>
+    <p>Daily Games Tracker (“the extension”, “we”) · Effective 16 November 2026</p>
+
+    <h2>The short version</h2>
+    <p>Tracking your games happens entirely in your browser, and nothing is sent anywhere. Only if you choose to <strong>sign in with Google</strong> to use the Friends feature do we store a small amount of data, so that friends you've added can see your daily progress. We never sell data, show ads or use it for anything else. You can delete everything at any time.</p>
+
+    <h2>1. Without signing in</h2>
+    <p>The extension runs on these sites only: nytimes.com (Wordle, Connections, Strands, The Mini), globle-game.com, worldle.teuteuf.fr and krillion.io. On those pages it reads the game's own saved progress in your browser, and the visible page, to tell whether you've finished today's puzzle.</p>
+    <p>It then saves a simple record such as “Wordle: solved at 8:42 AM” in your browser's extension storage. This record is <strong>never sent to us or anyone else</strong>, and it's wiped every night at midnight. The extension does not read your browsing on any other site.</p>
+
+    <h2>2. If you sign in (Friends feature)</h2>
+    <p>Signing in is optional. When you click “Sign in with Google”, Chrome asks you to share your basic Google profile with the extension. We then store the following in Google Firebase (Cloud Firestore and Firebase Authentication), run by Google on our behalf:</p>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Data</th><th>Why</th><th>Who can see it</th></tr>
+        <tr><td>Name and profile photo</td><td>To show you on leaderboards</td><td>You, and people you've added as friends</td></tr>
+        <tr><td>Email address</td><td>So friends can add you by email</td><td>You, and people you've added as friends. Others can only check whether an exact email they already know belongs to a user, and they can't browse emails.</td></tr>
+        <tr><td>Friend code</td><td>So friends can add you by code</td><td>Anyone you share it with</td></tr>
+        <tr><td>Your friends list</td><td>To build your leaderboard</td><td>Only you</td></tr>
+        <tr><td>Which games you finished each day, with the time and win/loss</td><td>For the daily leaderboard</td><td>You, and people you've added as friends</td></tr>
+      </table>
+    </div>
+    <p>Friendship is mutual: someone can only see your progress if <strong>you</strong> have added them. Our database rules enforce this, not just the app.</p>
+
+    <h2>3. What we don't do</h2>
+    <ul>
+      <li>We don't sell, rent or share your data with third parties, other than Google as our hosting provider.</li>
+      <li>We don't use your data for advertising, profiling or credit decisions.</li>
+      <li>We don't use analytics or tracking scripts in the extension.</li>
+      <li>We don't collect your browsing history, game answers or any data from sites other than the ones listed above.</li>
+    </ul>
+    <p>The use of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
+    <h2>4. Deleting your data</h2>
+    <ul>
+      <li><strong>Everything:</strong> open the extension, go to the Friends tab and click <strong>Delete account</strong>, then click it again to confirm. This permanently deletes your profile, friend code, friends list, daily history and sign-in account from our database.</li>
+      <li><strong>Local data:</strong> uninstalling the extension removes everything it saved in your browser.</li>
+      <li>One caveat: if a friend added you, their own friends list keeps your name, as they saved it, until they remove you. It no longer shows any of your progress.</li>
+    </ul>
+
+    <h2>5. Retention and security</h2>
+    <p>Data is kept until you delete your account. All traffic is encrypted (HTTPS), and access is limited by Firebase security rules as described above.</p>
+
+    <h2>6. Children</h2>
+    <p>The extension is not directed at children under 13, and we don't knowingly collect data from them.</p>
+
+    <h2>7. Changes</h2>
+    <p>If this policy changes, we'll update the date at the top. Significant changes will also be noted in the extension's store listing.</p>
+
+    <h2>8. Contact</h2>
+    <p>Questions or deletion requests: <a href="mailto:raahil.pattan@gmail.com">raahil.pattan@gmail.com</a></p>
+
+    <footer>
+      <a href="index.html">Home</a>
+    </footer>
+  </main>
+</body>
+</html>

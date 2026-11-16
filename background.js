@@ -2,6 +2,8 @@
 // and keeps the toolbar badge in sync.
 
 import { GAMES, GAME_IDS, STATE_KEY, todayISO, nextMidnight, emptyState, freshOrEmpty } from './shared/games.js';
+import { signIn, signOut, currentUser, isFirebaseConfigured } from './shared/firebase.js';
+import { ensureProfile, pushDailyStats, addFriend, removeFriend, getLeaderboard, deleteAccount } from './shared/social.js';
 
 const ALARM = 'midnight-reset';
 
@@ -48,8 +50,18 @@ function setGame(gameId, completed, meta = {}) {
       delete state.games[gameId];
     }
     await chrome.storage.local.set({ [STATE_KEY]: state });
+    syncStats(state);
     return state;
   });
+}
+
+// --- Cloud sync -------------------------------------------------------------
+// Mirror today's local state to Firestore whenever it changes (if signed in).
+// Fire-and-forget: local tracking never waits on, or fails because of, the network.
+// A failed push is retried on the next change or the next popup open.
+function syncStats(state) {
+  if (!isFirebaseConfigured()) return;
+  pushDailyStats(state).catch((e) => console.warn('[DailyTracker] stats sync failed:', e.message));
 }
 
 // --- Midnight reset ---------------------------------------------------------
@@ -104,9 +116,71 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       ensureFresh().then((state) => sendResponse(state));
       return true;
     }
+
+    // ---- Friends / auth (from the popup) ----
+    case 'AUTH_STATE':
+      respond(sendResponse, async () => ({
+        configured: isFirebaseConfigured(),
+        user: isFirebaseConfigured() ? await currentUser() : null,
+      }));
+      return true;
+
+    case 'SIGN_IN':
+      respond(sendResponse, async () => {
+        const user = await signIn(); // chrome.identity.getAuthToken({ interactive: true })
+        const profile = await ensureProfile();
+        syncStats(await ensureFresh()); // publish today's progress straight away
+        return { user, profile };
+      });
+      return true;
+
+    case 'SIGN_OUT':
+      respond(sendResponse, async () => { await signOut(); return {}; });
+      return true;
+
+    case 'DELETE_ACCOUNT':
+      respond(sendResponse, async () => { await deleteAccount(); return {}; });
+      return true;
+
+    case 'ADD_FRIEND':
+      respond(sendResponse, () => addFriend(msg.query));
+      return true;
+
+    case 'REMOVE_FRIEND':
+      respond(sendResponse, () => removeFriend(msg.uid));
+      return true;
+
+    case 'GET_LEADERBOARD':
+      respond(sendResponse, async () => {
+        const state = await ensureFresh();
+        syncStats(state); // cheap catch-up in case an earlier push failed
+        return getLeaderboard(state);
+      });
+      return true;
   }
   return false;
 });
+
+/** Run an async handler and reply with { ok, data } or { ok: false, error, code }. */
+function respond(sendResponse, fn) {
+  Promise.resolve()
+    .then(fn)
+    .then((data) => sendResponse({ ok: true, data }))
+    .catch((e) => {
+      console.warn('[DailyTracker]', e);
+      sendResponse({ ok: false, error: friendlyError(e), code: e.code || null });
+    });
+}
+
+function friendlyError(e) {
+  const m = String(e?.message || e);
+  if (/did not approve|user.*(cancel|closed)|canceled/i.test(m)) return 'Sign-in was cancelled.';
+  if (/OAuth2 not granted|bad client id|invalid_client/i.test(m)) return 'OAuth client ID is not set up. See the README.';
+  if (/not configured/i.test(m)) return 'Firebase is not configured yet. See the README.';
+  if (/INVALID_IDP_RESPONSE/i.test(m)) return 'Google sign-in was rejected by Firebase. Check that the Google provider is enabled.';
+  if (/Failed to fetch|NetworkError/i.test(m)) return "You're offline.";
+  return m;
+}
 
 // --- Badge ------------------------------------------------------------------
 function updateBadge(state) {
