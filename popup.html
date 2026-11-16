@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Daily Games</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="widget">
+    <header class="head">
+      <div class="title-row">
+        <h1>Daily Games</h1>
+        <time id="date" class="date"></time>
+      </div>
+
+      <div class="progress">
+        <div class="progress-label">
+          <span id="progress-text">0/7 completed today</span>
+          <span id="progress-pct" class="pct">0%</span>
+        </div>
+        <div class="bar" role="progressbar" aria-labelledby="progress-text" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0">
+          <div id="bar-fill" class="bar-fill"></div>
+        </div>
+      </div>
+    </header>
+
+    <ul id="game-list" class="games"></ul>
+
+    <footer class="foot">
+      <span id="reset-countdown">Resets at midnight</span>
+    </footer>
+  </main>
+
+  <template id="row-template">
+    <li class="game">
+      <button class="open" type="button">
+        <span class="status" aria-hidden="true">
+          <svg class="ring" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5"/></svg>
+          <svg class="check" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9"/><path d="M6 10.4l2.6 2.6L14.2 7.4"/></svg>
+        </span>
+        <span class="glyph"></span>
+        <span class="text">
+          <span class="name"></span>
+          <span class="sub"></span>
+        </span>
+        <svg class="arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5h6.5V10M12.5 3.5L4 12"/></svg>
+      </button>
+      <button class="toggle" type="button"></button>
+    </li>
+  </template>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

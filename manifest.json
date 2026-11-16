@@ -1,0 +1,81 @@
+{
+  "manifest_version": 3,
+  "name": "Daily Games Tracker",
+  "short_name": "Daily Games",
+  "version": "1.0.0",
+  "description": "Tracks your progress on Wordle, Connections, Strands, the Mini, Globle, Worldle and Krillion. Resets at midnight.",
+  "permissions": ["storage", "alarms"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Daily Games",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.nytimes.com/games/wordle/*",
+        "https://www.nytimes.com/games/connections*",
+        "https://www.nytimes.com/games/strands*",
+        "https://www.nytimes.com/crosswords/game/mini*",
+        "https://globle-game.com/*",
+        "https://*.globle-game.com/*",
+        "https://worldle.teuteuf.fr/*",
+        "https://krillion.io/*"
+      ],
+      "js": ["content/page-hook.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.nytimes.com/games/wordle/*"],
+      "js": ["content/common.js", "content/games/wordle.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.nytimes.com/games/connections*"],
+      "js": ["content/common.js", "content/games/connections.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.nytimes.com/games/strands*"],
+      "js": ["content/common.js", "content/games/strands.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.nytimes.com/crosswords/game/mini*"],
+      "exclude_matches": ["https://www.nytimes.com/crosswords/game/mini/*/*"],
+      "js": ["content/common.js", "content/games/mini.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://globle-game.com/*", "https://*.globle-game.com/*"],
+      "js": ["content/common.js", "content/games/globle.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://worldle.teuteuf.fr/*"],
+      "js": ["content/common.js", "content/games/worldle.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://krillion.io/*"],
+      "js": ["content/common.js", "content/games/krillion.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
