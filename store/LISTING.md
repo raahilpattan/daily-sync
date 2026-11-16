@@ -4,7 +4,7 @@ Copy-paste material for the Developer Dashboard (https://chrome.google.com/webst
 
 ## Store listing
 
-**Name:** Daily Games Tracker
+**Name:** Daily Sync
 
 **Summary** (≤132 chars):
 > Track today's Wordle, Connections, Strands, Mini, Globle, Worldle and Krillion at a glance, and compare progress with friends.
@@ -12,7 +12,7 @@ Copy-paste material for the Developer Dashboard (https://chrome.google.com/webst
 **Category:** Fun (alternative: Productivity)
 
 **Description:**
-> Daily Games Tracker keeps a running checklist of the daily puzzles you play, and ticks each one off as you finish it.
+> Daily Sync keeps a running checklist of the daily puzzles you play, and ticks each one off as you finish it.
 >
 > TRACKED GAMES
 > • Wordle, Connections, Strands and The Mini (NYT Games)
@@ -34,7 +34,9 @@ Copy-paste material for the Developer Dashboard (https://chrome.google.com/webst
 
 **Screenshots** (1280×800): `store/screenshot-games.png`, `store/screenshot-friends.png`
 
-**Icon:** `icons/icon128.png` (a placeholder for now; consider a designed icon before launch)
+**Icon:** `icons/icon128.png`, the DS logo with the store's recommended 16px transparent padding. All icon sizes are generated from `store/logo-source.jpg` by `scripts/make-icons.ps1`.
+
+Don't upload the logo to the Google Auth Platform **Branding** page. Adding a logo there triggers Google's brand verification review, which isn't needed for an app that only asks for email and profile.
 
 **Homepage URL:** `https://raahilpattan.github.io/daily-sync/`
 **Privacy policy URL:** `https://raahilpattan.github.io/daily-sync/privacy.html`
@@ -80,6 +82,6 @@ Note on "website content": the extension reads game pages *locally* to detect co
 8. [ ] Google Auth Platform → **Clients** → new **Chrome Extension** client with the store item ID.
 9. [ ] `scripts\build-store.ps1 -ClientId <new client id>` → upload the new zip to the same item.
 10. [ ] Fill in the listing and privacy tabs from this file, then **Submit for review**.
-11. [ ] After approval, put the store URL in `docs/index.html` (`CHROME_WEB_STORE_URL`).
+11. [ ] After approval, point the homepage button in `docs/index.html` at the store listing and relabel it "Add to Chrome".
 
 Keep the dev OAuth client (item ID `dcklimnifkhdpgnopgcfoncjpihpnhgp`) for local testing. Both clients can coexist in the same project.

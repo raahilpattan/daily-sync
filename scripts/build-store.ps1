@@ -51,7 +51,7 @@ if ($ClientId) {
 $manifestOut = $manifest | ConvertTo-Json -Depth 20
 
 $version = $manifest.version
-$zipPath = Join-Path $dist "daily-games-tracker-$version.zip"
+$zipPath = Join-Path $dist "daily-sync-$version.zip"
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
 $utf8 = New-Object System.Text.UTF8Encoding($false)

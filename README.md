@@ -1,4 +1,4 @@
-# Daily Games Tracker (Chrome, Manifest V3)
+# Daily Sync (Chrome, Manifest V3)
 
 A toolbar popup that tracks whether you've finished today's **Wordle, Connections, Strands, The Mini, Globle, Worldle and Krillion**. It detects completion on its own while you play, and resets at local midnight. An optional Friends tab shows a daily leaderboard.
 
@@ -84,7 +84,8 @@ Issues and pull requests are welcome. The most useful contributions are fixes to
 
 - `docs/` holds the public homepage and privacy policy, served by GitHub Pages at https://raahilpattan.github.io/daily-sync/. Google needs them before the OAuth app can go to Production.
 - `scripts/build-store.ps1` builds the Chrome Web Store zip into `dist/`. It strips `"key"` and can swap in the store's OAuth client ID with `-ClientId`.
-- `store/` holds the screenshots and `LISTING.md`, which has the listing text, permission justifications, privacy form answers and the full launch checklist.
+- `scripts/make-icons.ps1` regenerates every icon (extension, store and website favicon) from `store/logo-source.jpg`.
+- `store/` holds the logo source, the screenshots and `LISTING.md`, which has the listing text, permission justifications, privacy form answers and the full launch checklist.
 
 ## If a game stops being detected
 
