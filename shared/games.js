@@ -2,14 +2,15 @@
 // (Content scripts can't import ES modules, so they hardcode their own gameId string,
 // which must match an `id` here.)
 
+// `tag` is an optional little badge shown next to the name in the popup.
 export const GAMES = [
   { id: 'wordle',      name: 'Wordle',        source: 'NYT Games',  glyph: 'W', color: '#6aaa64', url: 'https://www.nytimes.com/games/wordle/index.html' },
-  { id: 'connections', name: 'Connections',   source: 'NYT Games',  glyph: 'C', color: '#ba81c5', url: 'https://www.nytimes.com/games/connections' },
-  { id: 'strands',     name: 'Strands',       source: 'NYT Games',  glyph: 'S', color: '#c9b458', url: 'https://www.nytimes.com/games/strands' },
-  { id: 'mini',        name: 'The Mini',      source: 'NYT Games',  glyph: 'M', color: '#4f85e5', url: 'https://www.nytimes.com/crosswords/game/mini' },
-  { id: 'globle',      name: 'Globle',        source: 'globle-game.com', glyph: 'G', color: '#2aa198', url: 'https://globle-game.com/' },
-  { id: 'worldle',     name: 'Worldle',       source: 'teuteuf.fr', glyph: 'Wo', color: '#e0803a', url: 'https://worldle.teuteuf.fr/' },
-  { id: 'krillion',    name: 'Krillion',      source: 'krillion.io', glyph: 'K', color: '#ff5d8f', url: 'https://krillion.io/' },
+  { id: 'connections', name: 'Connections',   source: 'NYT Games',  glyph: 'C', color: '#a65bbd', url: 'https://www.nytimes.com/games/connections' },
+  { id: 'strands',     name: 'Strands',       source: 'NYT Games',  glyph: 'S', color: '#d6a62a', tag: 'NYT', url: 'https://www.nytimes.com/games/strands' },
+  { id: 'mini',        name: 'The Mini',      source: 'NYT Games',  glyph: 'M', color: '#3b82f6', url: 'https://www.nytimes.com/crosswords/game/mini' },
+  { id: 'globle',      name: 'Globle',        source: 'globle-game.com', glyph: 'G', color: '#14946f', tag: 'GEO', url: 'https://globle-game.com/' },
+  { id: 'worldle',     name: 'Worldle',       source: 'teuteuf.fr', glyph: 'Wo', color: '#f0862a', url: 'https://worldle.teuteuf.fr/' },
+  { id: 'krillion',    name: 'Krillion',      source: 'krillion.io', glyph: 'K', color: '#e0405f', url: 'https://krillion.io/' },
 ];
 
 export const GAME_IDS = new Set(GAMES.map((g) => g.id));

@@ -6,46 +6,53 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <main class="widget">
+  <main class="card">
     <header class="head">
       <div class="title-row">
         <h1>Daily Games</h1>
         <time id="date" class="date"></time>
       </div>
 
-      <div class="progress">
-        <div class="progress-label">
-          <span id="progress-text">0/7 completed today</span>
-          <span id="progress-pct" class="pct">0%</span>
-        </div>
-        <div class="bar" role="progressbar" aria-labelledby="progress-text" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0">
-          <div id="bar-fill" class="bar-fill"></div>
-        </div>
+      <div class="progress-label">
+        <span id="progress-text"><b>0/7</b> completed today</span>
+        <svg class="clipboard" viewBox="0 0 20 20" aria-hidden="true">
+          <rect x="4" y="3.5" width="12" height="14" rx="2.2"/>
+          <rect x="7.2" y="2" width="5.6" height="3.2" rx="1.1" class="clip"/>
+          <path d="M7 9.2l1.2 1.2L10.4 8.2M11.8 9.5H13.5M7 13.4l1.2 1.2 2.2-2.2M11.8 13.7H13.5"/>
+        </svg>
+      </div>
+
+      <div class="bar" role="progressbar" aria-labelledby="progress-text" aria-valuemin="0" aria-valuemax="7" aria-valuenow="0">
+        <div id="bar-fill" class="bar-fill"></div>
+        <div id="bar-knob" class="bar-knob"></div>
       </div>
     </header>
 
     <ul id="game-list" class="games"></ul>
 
     <footer class="foot">
+      <svg class="clock" viewBox="0 0 20 20" aria-hidden="true">
+        <circle cx="10" cy="11" r="6.5"/>
+        <path d="M10 7.6V11l2.2 1.6M4.2 4.6l2-1.6M15.8 4.6l-2-1.6"/>
+      </svg>
       <span id="reset-countdown">Resets at midnight</span>
     </footer>
   </main>
 
   <template id="row-template">
     <li class="game">
+      <button class="status" type="button">
+        <span class="ring"></span>
+        <svg class="check" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9"/><path d="M6 10.4l2.6 2.6L14.2 7.4"/></svg>
+      </button>
       <button class="open" type="button">
-        <span class="status" aria-hidden="true">
-          <svg class="ring" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5"/></svg>
-          <svg class="check" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9"/><path d="M6 10.4l2.6 2.6L14.2 7.4"/></svg>
-        </span>
-        <span class="glyph"></span>
+        <span class="tile" aria-hidden="true"><span class="tile-art"></span><span class="tile-letter"></span></span>
         <span class="text">
-          <span class="name"></span>
+          <span class="name-row"><span class="name"></span><span class="tag" hidden></span></span>
           <span class="sub"></span>
         </span>
-        <svg class="arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5h6.5V10M12.5 3.5L4 12"/></svg>
+        <svg class="arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11.5M11 5.5l4.5 4.5-4.5 4.5"/></svg>
       </button>
-      <button class="toggle" type="button"></button>
     </li>
   </template>
 
