@@ -1,63 +1,174 @@
-# Daily Sync (Chrome, Manifest V3)
+<p align="center">
+  <img src="docs/logo.png" alt="Daily Sync logo" width="96" height="96">
+</p>
 
-A toolbar popup that tracks whether you've finished today's **Wordle, Connections, Strands, The Mini, Globle, Worldle and Krillion**. It detects completion on its own while you play, and resets at local midnight. An optional Friends tab shows a daily leaderboard.
+<h1 align="center">Daily Sync</h1>
 
-Open source under the [MIT License](LICENSE). Website and privacy policy: https://raahilpattan.github.io/daily-sync/
+<p align="center">
+  A Chrome extension that keeps a checklist of the daily puzzles you play,<br>
+  ticks each one off as you finish it, and starts fresh at midnight.
+</p>
 
-Not affiliated with The New York Times, Globle, Worldle (teuteuf) or Krillion.
+<p align="center">
+  <a href="https://raahilpattan.github.io/daily-sync/">Website</a> ·
+  <a href="https://raahilpattan.github.io/daily-sync/privacy.html">Privacy policy</a> ·
+  <a href="LICENSE">MIT License</a>
+</p>
 
-## Install (unpacked)
+---
 
-1. Open `chrome://extensions` and turn on **Developer mode**.
-2. Click **Load unpacked** and select this folder.
-3. Pin the extension. The badge shows how many games are left (✓ when all seven are done).
+## What it tracks
 
-## How it works
-
-| Piece | Role |
+| Game | Site |
 |---|---|
-| `content/page-hook.js` | Runs in the page's MAIN world and wraps `localStorage.setItem`, so the tracker knows the moment a game saves state. The `storage` event only fires in *other* tabs, so it can't do this. |
-| `content/common.js` | `DailyTracker` helpers plus the watcher loop. It re-runs detection on storage writes, DOM changes, page load and a 15s poll, then messages the worker once. |
-| `content/games/*.js` | One detector per game: known localStorage format, then DOM signals (board or results modal), then a generic scan for `status: "WIN"`, `solved: true` and similar. |
-| `background.js` | The only writer to `chrome.storage.local`. It runs a one-shot alarm at local midnight that wipes the day and re-arms. Every read also checks the date, so a missed alarm (asleep or closed) can't leave stale ticks. |
-| `popup.*` | The widget, with **My Games** and **Friends** tabs. It live-updates through `chrome.storage.onChanged`. Click a game's circle to mark it done or undo. |
-| `friends.js` | Friends tab UI. It only messages the service worker and renders the replies. |
-| `shared/firebase.js`, `shared/social.js` | Google sign-in, a Firebase Auth + Firestore REST client, and the friends/leaderboard logic. Used only by the service worker. |
+| Wordle | nytimes.com/games/wordle |
+| Connections | nytimes.com/games/connections |
+| Strands | nytimes.com/games/strands |
+| The Mini | nytimes.com/crosswords/game/mini |
+| Globle | globle-game.com |
+| Worldle | worldle.teuteuf.fr |
+| Krillion | krillion.io |
 
-A "won" state only counts if it carries today's date, or if it carries no date and the page wrote it just now. That keeps yesterday's leftover state from ticking today's box.
+You play the games on their own websites, the same way you normally do. Daily Sync watches those pages in the background and ticks a game off once you've finished today's puzzle. Wins and losses both count as finished.
 
-Permissions: `storage`, `alarms` and `identity`. Content scripts are limited to the seven game URLs.
+---
 
-## Friends leaderboard: one-time setup
+## Install
 
-Fill in two placeholders: the OAuth client ID in `manifest.json` and the Firebase keys in `firebase-config.js`. Until then, the Friends tab shows a "not set up yet" notice and everything else works.
+> **Chrome Web Store:** coming soon. Once the listing is live, it will be linked here and on the [website](https://raahilpattan.github.io/daily-sync/), and that will be the easiest way to install.
 
-The manifest's `"key"` pins the extension ID to **`dcklimnifkhdpgnopgcfoncjpihpnhgp`** on every machine, so a single OAuth client works for everyone who loads this folder.
+Until then, install it from this repo:
 
-### 1. Firebase project
-1. In the [Firebase console](https://console.firebase.google.com/), click **Add project**.
-2. Go to **Build → Authentication → Get started → Sign-in method** and enable **Google**.
-3. Go to **Build → Firestore Database → Create database** and choose production mode.
-4. In **Firestore → Rules**, paste [`firestore.rules`](firestore.rules) and click **Publish**.
-5. Go to **Project settings → General → Your apps** and add a **Web app**. Copy `apiKey` and `projectId` into [`firebase-config.js`](firebase-config.js).
+1. **Download the code.** On this page, click the green **Code** button, then **Download ZIP**, and unzip it somewhere you'll keep it. If you use git, you can run `git clone https://github.com/raahilpattan/daily-sync.git` instead.
+2. Open **`chrome://extensions`** in Chrome.
+3. Turn on **Developer mode** (top-right switch).
+4. Click **Load unpacked** and select the unzipped `daily-sync` folder (the one that contains `manifest.json`).
+5. Click the puzzle-piece icon in Chrome's toolbar and **pin** Daily Sync so it's always visible.
 
-### 2. Google Cloud OAuth client (Chrome Extension type)
-1. Open the [Google Cloud Console](https://console.cloud.google.com/) and select **the same project Firebase created**. This is required, because Firebase only accepts Google tokens issued to its own project.
-2. Go to **APIs & Services → OAuth consent screen**. Set it up as **External**, add your app name and support email, and add the `userinfo.email` and `userinfo.profile` scopes. While it's in **Testing**, add yourself and your friends as **Test users**.
-3. Go to **APIs & Services → Credentials → Create credentials → OAuth client ID**.
-   - Application type: **Chrome Extension**
-   - Item ID: `dcklimnifkhdpgnopgcfoncjpihpnhgp`
-4. Copy the client ID (`….apps.googleusercontent.com`) into `manifest.json` under `oauth2.client_id`.
-5. Reload the extension in `chrome://extensions`.
+Don't delete or move the folder afterwards, because Chrome loads the extension from it. To update, download the new code over the old folder and click the reload icon on the extension's card in `chrome://extensions`.
 
-`chrome.identity.getAuthToken` works in Google Chrome only. Chromium forks like Brave and Edge don't support it.
+---
 
-### How friends work
-- Everyone gets a 6-character **friend code**, shown on the Friends tab (click to copy). You can add someone by code or by the email they signed in with.
-- Friendship is **mutual**. You see someone's progress only after you've added each other. One-way adds show under "Waiting for them to add you back". This is enforced by the Firestore rules, so knowing someone's email isn't enough to watch their stats.
-- Whenever a game is ticked or unticked, the service worker writes your progress to Firestore. Signing in uploads today's progress straight away.
+## How to use it
 
-### Firestore schema
+### My Games tab
+
+- **Just play.** Open a game from the list (or go to the site directly) and finish today's puzzle. Within a few seconds the game turns into a ✓ in the popup.
+- **The badge** on the toolbar icon shows how many games you have left today. It changes to ✓ once you've finished all seven.
+- **The progress bar** fills up as you go.
+- **Click the circle** next to a game to mark it done yourself, for example if you played on your phone. Click it again to undo.
+- **Click the game's name** to open it in a new tab.
+- **Midnight reset:** at local midnight the list clears for the next day. If your computer was asleep at midnight, the list resets the next time you open Chrome.
+
+### Friends tab (optional)
+
+Tracking works without an account. The Friends tab is only for comparing progress with other people.
+
+1. Open the **Friends** tab and click **Sign in with Google**.
+2. You'll get a 6-character **friend code**. Click it to copy it and send it to a friend.
+3. To add someone, type their **friend code** or the **email they signed in with** into the box and click **Add**.
+4. **They have to add you back.** Until they do, they appear under *"Waiting for them to add you back"*, and neither of you can see the other's progress.
+5. Once you've added each other, the leaderboard shows who has finished how many games today, with one dot per game. Click ↻ to refresh it.
+
+To leave, use **Sign out** at the bottom of the tab. **Delete account** (click it twice to confirm) permanently removes your profile, friend list and stats from the server.
+
+Sign-in uses Chrome's built-in Google account support, so it only works in **Google Chrome**. Other Chromium browsers such as Brave, Edge and Arc don't support it. Game tracking still works in those browsers.
+
+---
+
+## Troubleshooting
+
+**A game didn't tick after I finished it.**
+First, close and reopen the popup, and make sure you finished *today's* puzzle (not an archive one). If it still isn't ticked, click its circle to mark it done yourself. Sites sometimes change how they save progress. If you'd like to help fix it, follow [Debugging a detector](#debugging-a-detector) and open an issue with the console output.
+
+**Connections, Strands or The Mini didn't tick.**
+These are the least certain detectors, because the NYT doesn't save them in a stable format. Reports are especially welcome.
+
+**Krillion reset at an odd time.**
+Krillion's new puzzle comes out at midnight New York time, but Daily Sync resets at *your* local midnight. If you live outside US Eastern time, the two can be a few hours apart.
+
+**"Sign in" does nothing or shows an error.**
+Make sure you're in Google Chrome and signed in to Chrome with a Google account. If the message mentions access being blocked, the sign-in setup is still waiting on Google's review. Please open an issue.
+
+**The Friends tab says "isn't set up yet".**
+You're running a fork without its own Firebase and Google sign-in configuration. See [Run your own backend](#run-your-own-backend).
+
+---
+
+## Privacy
+
+- **Tracking happens entirely in your browser.** The extension only runs on the seven game sites listed above, and it only stores whether each game is finished today.
+- **Nothing is uploaded unless you sign in** to Friends. If you do, it stores your Google name, email, profile photo, friend code, friend list and daily results, so that friends you've *both* added can see them.
+- You can delete all of it at any time with **Delete account**.
+
+Full details are in the [privacy policy](https://raahilpattan.github.io/daily-sync/privacy.html).
+
+Daily Sync is an independent project. It is not affiliated with The New York Times, Globle, Worldle (teuteuf) or Krillion.
+
+---
+
+## For developers
+
+### How it works
+
+| File | Role |
+|---|---|
+| `content/page-hook.js` | Runs in the page's MAIN world and wraps `localStorage.setItem`, so the tracker knows the moment a game saves its state. The `storage` event can't be used for this, because it only fires in *other* tabs. |
+| `content/common.js` | `DailyTracker` helpers and the watcher loop. It re-runs detection on storage writes, DOM changes, page load and a 15 s poll, then sends one message to the worker. |
+| `content/games/*.js` | One detector per game. Each tries the game's known localStorage format first, then DOM signals (the board or a results modal), then a generic scan for things like `status: "WIN"` and `solved: true`. |
+| `background.js` | Service worker, and the only writer to `chrome.storage.local`. It runs a one-shot alarm at local midnight that clears the day and re-arms itself. Every read also checks the date, so a missed alarm can't leave yesterday's ticks behind. |
+| `popup.*`, `friends.js` | The popup UI. It updates live through `chrome.storage.onChanged`. `friends.js` only messages the service worker and renders what comes back. |
+| `shared/games.js` | The list of games (name, URL, colour, tag). |
+| `shared/firebase.js`, `shared/social.js` | Google sign-in, a small Firebase Auth and Firestore REST client, and the friends and leaderboard logic. They run only in the service worker. |
+| `firestore.rules` | Server-side access rules. Friendship is enforced as mutual here, so knowing someone's email isn't enough to see their stats. |
+
+A "won" state only counts if it carries today's date, or if it has no date and the page wrote it just now. That stops yesterday's leftover state from ticking today's box.
+
+The extension uses Firebase over REST rather than the Firebase JS SDK. MV3 bans remotely hosted code, so the SDK would need an npm bundling step. The Firestore SDK also needs `XMLHttpRequest`, which MV3 service workers don't have. The REST calls go through the same security rules.
+
+Permissions: `storage`, `alarms` and `identity`. Content scripts only match the seven game URLs.
+
+### Debugging a detector
+
+1. Open the game and finish (or load) today's puzzle.
+2. In DevTools → Console, run `localStorage.setItem('dgt-debug', '1')` and reload the page.
+3. The console logs a localStorage snapshot and every detection pass, tagged `[DailyTracker]`.
+4. Patch `content/games/<game>.js` at the `👉 PATCH HERE` comment, then click reload on the extension in `chrome://extensions`.
+
+How reliable each detector is:
+- **Globle, Worldle:** known formats (`statistics.lastWin`; `guesses["YYYY-MM-DD"]` with `distance === 0`).
+- **Wordle:** the `nyt-wordle-moogle/*` or `nyt-wordle-state` status, plus reading the board tiles.
+- **Krillion:** `krillion:stats:v1` → `history["YYYY-MM-DD"]`, using the New York date. Also checks the "Dive #N complete" text.
+- **Connections, Strands, Mini:** DOM signals ("Next puzzle in", "View Results", the Mini congrats modal) plus the generic scanner. These are the most likely to break.
+
+### Adding a new game
+
+1. Add an entry to `GAMES` in `shared/games.js`.
+2. Create `content/games/<id>.js` that calls `DailyTracker.register('<id>', detect)`. Copy an existing detector as a starting point.
+3. In `manifest.json`, add a `content_scripts` entry for the game's URL, and add the same URL to the `page-hook.js` entry.
+4. Add the site to the host list in `store/LISTING.md` and `docs/privacy.html`.
+
+Issues and pull requests are welcome, especially detector fixes and new daily games.
+
+### Run your own backend
+
+`firebase-config.js` and `oauth2.client_id` in `manifest.json` point at this project's Firebase and Google sign-in. You can load them as-is for local development. The manifest's `"key"` pins the unpacked extension ID to `dcklimnifkhdpgnopgcfoncjpihpnhgp` so that the existing OAuth client works for everyone.
+
+If you publish your own fork, set up your own backend:
+
+1. **Firebase:** in the [Firebase console](https://console.firebase.google.com/), create a project.
+   - Go to **Authentication → Sign-in method** and enable **Google**.
+   - Create a **Firestore** database in production mode, then paste [`firestore.rules`](firestore.rules) into **Rules** and click **Publish**.
+   - Under **Project settings → Your apps**, add a **Web app** and copy `apiKey`, `authDomain` and `projectId` into `firebase-config.js`.
+2. **OAuth client:** in the [Google Cloud Console](https://console.cloud.google.com/), select the **same project** Firebase created.
+   - Set up **Google Auth Platform** (External, with the `userinfo.email` and `userinfo.profile` scopes). While it's in Testing, add yourself as a test user.
+   - Go to **Clients → Create client → Chrome Extension** and enter your extension's ID.
+   - Put the client ID into `manifest.json` → `oauth2.client_id`.
+3. Remove or replace `"key"` in `manifest.json`, so your extension gets its own ID.
+
+None of these values are secrets, because access is controlled by `firestore.rules`.
+
+Firestore schema:
 ```
 users/{uid}                          { uid, displayName, email, photoURL, friendCode, createdAt, updatedAt }
 users/{uid}/dailyStats/{YYYY-MM-DD}  { date, completed: { wordle: { result, at }, … }, count, total, updatedAt }
@@ -66,38 +177,15 @@ friendCodes/{CODE}                   { uid, displayName, photoURL }            �
 emailIndex/{email}                   { uid, displayName, photoURL }            ← lookup by exact email (get only)
 ```
 
-Why it uses REST instead of the Firebase JS SDK: MV3 bans remotely hosted code, so the SDK would need an npm bundling step. The full Firestore SDK also needs `XMLHttpRequest`, which MV3 service workers don't have. `shared/firebase.js` calls the same Firebase Auth and Firestore APIs with `fetch`, so the security rules work the same way.
+### Publishing
 
-## Contributing
+- `docs/` holds the website and privacy policy, served by GitHub Pages.
+- `scripts/build-store.ps1 -ClientId <store client id>` builds the Web Store zip into `dist/`. It strips `"key"` and swaps in the store's OAuth client.
+- `scripts/make-icons.ps1` regenerates every icon from `store/logo-source.jpg`.
+- `store/LISTING.md` has the listing text, permission justifications, privacy-form answers and the launch checklist.
 
-Issues and pull requests are welcome. The most useful contributions are fixes to game detectors when a site changes its storage format (see below), and detectors for new daily games:
+---
 
-1. Add an entry to `GAMES` in `shared/games.js`.
-2. Add `content/games/<id>.js`, calling `DailyTracker.register('<id>', detect)`.
-3. Add a `content_scripts` entry, and the URL in the `page-hook.js` entry, in `manifest.json`.
+## License
 
-## Forking with your own backend
-
-`firebase-config.js` and the `oauth2.client_id` in `manifest.json` point at this project's Firebase and Google sign-in setup. That's fine to load as-is for development. If you publish your own fork, create your own Firebase project and OAuth client using the setup steps above. Also remove or replace the manifest `"key"`, so your extension gets its own ID. None of these values are secrets, because access is enforced by `firestore.rules`.
-
-## Publishing
-
-- `docs/` holds the public homepage and privacy policy, served by GitHub Pages at https://raahilpattan.github.io/daily-sync/. Google needs them before the OAuth app can go to Production.
-- `scripts/build-store.ps1` builds the Chrome Web Store zip into `dist/`. It strips `"key"` and can swap in the store's OAuth client ID with `-ClientId`.
-- `scripts/make-icons.ps1` regenerates every icon (extension, store and website favicon) from `store/logo-source.jpg`.
-- `store/` holds the logo source, the screenshots and `LISTING.md`, which has the listing text, permission justifications, privacy form answers and the full launch checklist.
-
-## If a game stops being detected
-
-Sites change their storage formats. To find the new keys:
-
-1. Open the game, then in DevTools run `localStorage.setItem('dgt-debug', '1')` and reload.
-2. The console logs a full localStorage snapshot and every detection pass, tagged `[DailyTracker]`.
-3. Patch the matching `content/games/<game>.js` at the `👉 PATCH HERE` comment, then hit reload in `chrome://extensions`.
-
-## Confidence per game
-
-- **Globle and Worldle**: known formats (`statistics.lastWin`; `guesses["YYYY-MM-DD"]` with `distance === 0`).
-- **Wordle**: `nyt-wordle-moogle/*` / `nyt-wordle-state` status, plus reading the board tiles from the DOM.
-- **Krillion**: `krillion:stats:v1` → `history["YYYY-MM-DD"]`, read from the site's own code. Krillion's day rolls over at midnight New York time, but this tracker resets at your local midnight, so the two can differ by a few hours if you live outside Eastern time.
-- **Connections, Strands, Mini**: NYT's keys for these aren't stable, so they lean on DOM signals ("Next puzzle in", "View Results", the Mini congrats modal) plus the generic scanner. These are the most likely to need a patch.
+[MIT](LICENSE) © 2026 Raahil Pattan. Questions or feedback: [raahil.pattan@gmail.com](mailto:raahil.pattan@gmail.com) or [open an issue](https://github.com/raahilpattan/daily-sync/issues).
