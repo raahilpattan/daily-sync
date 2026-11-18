@@ -11,8 +11,11 @@ DailyTracker.register('krillion', (t) => {
   //   "krillion:game:v1" holds the in-progress dive and is cleared when the dive finishes.
   // 👉 PATCH HERE if the key or shape changes.
   for (const { key, value } of t.readKeys(/krillion:stats:v\d+$/)) {
-    if (value?.history?.[etDate]) {
-      return { completed: true, result: 'done', source: `storage:${key}` };
+    const entry = value?.history?.[etDate];
+    if (entry) {
+      const score = typeof entry === 'object' && Number.isFinite(entry.score) ? entry.score : null;
+      const detail = score !== null ? { summary: `Score ${score}`, grid: '' } : null;
+      return { completed: true, result: 'done', source: `storage:${key}`, detail };
     }
   }
 
@@ -22,4 +25,13 @@ DailyTracker.register('krillion', (t) => {
   }
 
   return null;
+}, {
+  // Only trust share text that names Krillion, then keep any "N/M" score and emoji lines.
+  parseShare(text, t) {
+    if (!/krillion/i.test(text)) return null;
+    const grid = t.emojiGrid(text);
+    const m = text.match(/(?:^|\s)(\d{1,2})\/(\d{1,2})(?=\s|$)/m);
+    if (!grid && !m) return null;
+    return { result: 'done', summary: m ? `${m[1]}/${m[2]}` : '', grid };
+  },
 });

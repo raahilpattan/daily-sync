@@ -153,14 +153,51 @@
     return null;
   }
 
+  // ---- Result details (shown to friends who finished the same game) --------------
+  // A detail is { summary, grid }: a short score like "4/6" and an emoji grid. Both are
+  // spoiler-free by design. No letters, words or answers are ever kept.
+  const PICTO = /\p{Extended_Pictographic}/u;
+
+  /** Emoji symbols in a line, one entry per symbol (variation selectors dropped). */
+  const pictos = (line) => Array.from(line).filter((ch) => PICTO.test(ch));
+
+  /** Keep only the emoji-grid lines of a share text: lines with emoji and no letters. */
+  function emojiGrid(text) {
+    return String(text || '')
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l && !/[A-Za-z]/.test(l) && pictos(l).length)
+      .slice(0, 12)
+      .join('\n');
+  }
+
+  /** Fallback share parser: any "N/M" score plus the emoji grid. */
+  function defaultShare(text) {
+    const grid = emojiGrid(text);
+    if (!grid) return null;
+    const m = text.match(/(?:^|\s)([X\d]{1,2})\/(\d{1,2})(?=\s|$)/m);
+    return {
+      result: m ? (m[1] === 'X' ? 'fail' : 'win') : 'done',
+      summary: m ? `${m[1]}/${m[2]}` : '',
+      grid,
+    };
+  }
+
   const helpers = {
     todayISO, readKeys, get, walk, dateOf, freshness, isFresh,
     normalizeStatus, genericStatus, scanAll, findVisibleText, isVisible, log,
+    emojiGrid, pictos,
   };
 
   // ---- Watcher loop ---------------------------------------------------------
-  function register(gameId, detect) {
+  /**
+   * @param detect      (t) => { completed, result, source, detail? } | null
+   * @param parseShare  optional (text, t) => { result, summary, grid } | null, run on the
+   *                    text the game copies when the player clicks its Share button.
+   */
+  function register(gameId, detect, { parseShare } = {}) {
     let reportedFor = null; // date we last reported completion for
+    let detailFor = null;   // date we last reported a result detail for
     let pending = null;     // { live, key }
     let timer = null;
     let lastRun = 0;
@@ -180,7 +217,9 @@
       lastRun = Date.now();
       const ctx = pending || { live: false, key: null };
       pending = null;
-      if (dead || reportedFor === todayISO()) return;
+      const today = todayISO();
+      // Done for the day once we've reported both the completion and its detail.
+      if (dead || (reportedFor === today && detailFor === today)) return;
 
       let res = null;
       try {
@@ -189,7 +228,10 @@
         log(`${gameId}: detector threw`, e);
       }
       log(`${gameId}: pass (live=${ctx.live}, key=${ctx.key})`, res);
-      if (res && res.completed) report(res);
+      if (!res || !res.completed) return;
+      // Report the first completion, and again if a detail turns up later (e.g. the board
+      // finished rendering after storage already said "won").
+      if (reportedFor !== today || (res.detail && detailFor !== today)) report(res);
     }
 
     // Coalesce bursts of triggers; never run more than ~once per 750ms.
@@ -206,12 +248,20 @@
 
     function report(res) {
       const date = todayISO();
+      const prev = { reportedFor, detailFor };
       reportedFor = date;
+      if (res.detail) detailFor = date;
+      const undo = () => { ({ reportedFor, detailFor } = prev); };
       try {
         chrome.runtime
-          .sendMessage({ type: 'GAME_COMPLETED', gameId, date, result: res.result || 'done', source: res.source || 'unknown' })
-          .then((r) => { if (!r?.ok) reportedFor = null; })
-          .catch(() => { reportedFor = null; });
+          .sendMessage({
+            type: 'GAME_COMPLETED', gameId, date,
+            result: res.result || 'done',
+            source: res.source || 'unknown',
+            detail: res.detail || null,
+          })
+          .then((r) => { if (!r?.ok) undo(); })
+          .catch(undo);
         log(`${gameId}: reported completion`, res);
       } catch {
         // "Extension context invalidated": the extension was reloaded under this tab.
@@ -227,6 +277,20 @@
 
     // 1) Page's own localStorage writes (via page-hook.js). Most reliable signal.
     window.addEventListener('__dgt_storage', (e) => schedule(true, e.detail));
+    // 1b) The player clicked the game's Share button (via page-hook.js).
+    window.addEventListener('__dgt_share', (e) => {
+      if (dead) return;
+      let parsed = null;
+      try { parsed = (parseShare || defaultShare)(String(e.detail || ''), helpers); } catch (err) { log(`${gameId}: share parser threw`, err); }
+      log(`${gameId}: share captured`, parsed);
+      if (!parsed || !(parsed.grid || parsed.summary)) return;
+      report({
+        completed: true,
+        result: parsed.result || 'done',
+        source: 'share',
+        detail: { summary: parsed.summary || '', grid: parsed.grid || '' },
+      });
+    });
     // 2) Writes from other tabs on the same site.
     window.addEventListener('storage', (e) => schedule(true, e.key));
     // 3) DOM changes (result modals, board state).

@@ -33,4 +33,21 @@ DailyTracker.register('connections', (t) => {
     });
     return res;
   }
+}, {
+  // Share text looks like "Connections / Puzzle #512 / 🟨🟨🟨🟨 / 🟩🟪🟩🟩 / …",
+  // with one emoji line per guess.
+  // A single-colour line is a solved group; anything else is a mistake.
+  parseShare(text, t) {
+    if (!/connections/i.test(text)) return null;
+    const grid = t.emojiGrid(text);
+    const rows = grid.split('\n').map(t.pictos).filter((r) => r.length === 4);
+    if (!rows.length) return null;
+    const solved = rows.filter((r) => r.every((c) => c === r[0])).length;
+    const mistakes = rows.length - solved;
+    const won = solved >= 4;
+    const summary = won
+      ? (mistakes ? `${mistakes} mistake${mistakes === 1 ? '' : 's'}` : 'Perfect')
+      : `${solved}/4 groups`;
+    return { result: won ? 'win' : 'fail', summary, grid };
+  },
 });

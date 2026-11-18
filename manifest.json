@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Daily Sync",
   "short_name": "Daily Sync",
-  "version": "1.0.1",
+  "version": "1.2.0",
   "description": "Automatically track your daily puzzle progress, stay organized, and compare results with friends.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqjsUsonQAeQKs4DgWajeQZZVNk1/HmFlMSo7QIFzz+0mtGKhcegMmBChX03hRV72Ld/L1qqqk8HOl9mtgleUFeSnYx513+54554asbdCtEWcAsISFggDKvDqCw4UBRxQCA9grl5hwF0/OP2Luurr/AETTihlORO2m3tM3flnbik9BrA+dkmZpyvhG8BCyS6mn6AILk7YJYcVqY8mzq+85UE21EByD/tQkUAzNI5aXBJbm5aNGPOWbOehwOPc8c64V6N40iB10UVmavJES4sDvJ7p4Yz7b+0p7n7ns6ohHmphygEhxe8TRZ1FFA+bB2I4Pf/bSGJkD4zWgEOlD1Vg8wIDAQAB",
   "permissions": ["storage", "alarms", "identity"],
@@ -39,7 +39,6 @@
         "https://www.nytimes.com/games/wordle/*",
         "https://www.nytimes.com/games/connections*",
         "https://www.nytimes.com/games/strands*",
-        "https://www.nytimes.com/crosswords/game/mini*",
         "https://globle-game.com/*",
         "https://*.globle-game.com/*",
         "https://worldle.teuteuf.fr/*",
@@ -62,12 +61,6 @@
     {
       "matches": ["https://www.nytimes.com/games/strands*"],
       "js": ["content/common.js", "content/games/strands.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["https://www.nytimes.com/crosswords/game/mini*"],
-      "exclude_matches": ["https://www.nytimes.com/crosswords/game/mini/*/*"],
-      "js": ["content/common.js", "content/games/mini.js"],
       "run_at": "document_idle"
     },
     {

@@ -11,14 +11,14 @@
 <body>
   <main>
     <h1>Privacy Policy</h1>
-    <p>Daily Sync (“the extension”, “we”) · Effective 16 November 2026</p>
+    <p>Daily Sync (“the extension”, “we”) · Effective 18 November 2026</p>
 
     <h2>The short version</h2>
     <p>Tracking your games happens entirely in your browser, and nothing is sent anywhere. Only if you choose to <strong>sign in with Google</strong> to use the Friends feature do we store a small amount of data, so that friends you've added can see your daily progress. We never sell data, show ads or use it for anything else. You can delete everything at any time.</p>
 
     <h2>1. Without signing in</h2>
-    <p>The extension runs on these sites only: nytimes.com (Wordle, Connections, Strands, The Mini), globle-game.com, worldle.teuteuf.fr and krillion.io. On those pages it reads the game's own saved progress in your browser, and the visible page, to tell whether you've finished today's puzzle.</p>
-    <p>It then saves a simple record such as “Wordle: solved at 8:42 AM” in your browser's extension storage. This record is <strong>never sent to us or anyone else</strong>, and it's wiped every night at midnight. The extension does not read your browsing on any other site.</p>
+    <p>The extension runs on these sites only: nytimes.com (Wordle, Connections, Strands), globle-game.com, worldle.teuteuf.fr and krillion.io. On those pages it reads the game's own saved progress in your browser, and the visible page, to tell whether you've finished today's puzzle. If you click a game's own <strong>Share</strong> button on one of those pages, it also reads the text the game copies, and keeps only the score and the coloured emoji grid. It never keeps words, letters or answers. It does not read anything else you copy.</p>
+    <p>It then saves a simple record such as “Wordle: solved 4/6 at 8:42 AM”, plus that emoji grid, in your browser's extension storage. Today's checklist resets every night at midnight. A short daily history (which games you finished each day, and your score) is kept for about 13 months to show your streaks and stats. Your list settings (which games you've hidden, and their order) are saved in your Chrome profile, which Chrome syncs between your own computers if you use Chrome sync. None of this is <strong>sent to us or anyone else</strong> unless you sign in. The extension does not read your browsing on any other site.</p>
 
     <h2>2. If you sign in (Friends feature)</h2>
     <p>Signing in is optional. When you click “Sign in with Google”, Chrome asks you to share your basic Google profile with the extension. We then store the following in Google Firebase (Cloud Firestore and Firebase Authentication), run by Google on our behalf:</p>
@@ -29,17 +29,18 @@
         <tr><td>Email address</td><td>So friends can add you by email</td><td>You, and people you've added as friends. Others can only check whether an exact email they already know belongs to a user, and they can't browse emails.</td></tr>
         <tr><td>Friend code</td><td>So friends can add you by code</td><td>Anyone you share it with</td></tr>
         <tr><td>Your friends list</td><td>To build your leaderboard</td><td>Only you</td></tr>
-        <tr><td>Which games you finished each day, with the time and win/loss</td><td>For the daily leaderboard</td><td>You, and people you've added as friends</td></tr>
+        <tr><td>Which games you finished each day and when, which games are in your list, and your current streak</td><td>For the daily leaderboard</td><td>You, and people you've added as friends</td></tr>
+        <tr><td>Your result for each game: win/loss, a short score such as “4/6”, and the spoiler-free emoji grid</td><td>So friends can compare results</td><td>You, and people you've added as friends, but only for a game <strong>they have also finished that day</strong>, so nobody is spoiled</td></tr>
       </table>
     </div>
-    <p>Friendship is mutual: someone can only see your progress if <strong>you</strong> have added them. Our database rules enforce this, not just the app.</p>
+    <p>Friendship is mutual: someone can only see your progress if <strong>you</strong> have added them. A friend can only see your result for a game once they've finished that game themselves. Our database rules enforce both of these, not just the app.</p>
 
     <h2>3. What we don't do</h2>
     <ul>
       <li>We don't sell, rent or share your data with third parties, other than Google as our hosting provider.</li>
       <li>We don't use your data for advertising, profiling or credit decisions.</li>
       <li>We don't use analytics or tracking scripts in the extension.</li>
-      <li>We don't collect your browsing history, game answers or any data from sites other than the ones listed above.</li>
+      <li>We don't collect your browsing history, game answers, anything else you copy, or any data from sites other than the ones listed above.</li>
     </ul>
     <p>The use of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
 

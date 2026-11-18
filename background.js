@@ -1,9 +1,12 @@
 // Service worker: owns all writes to chrome.storage.local, handles the midnight reset,
 // and keeps the toolbar badge in sync.
 
-import { GAMES, GAME_IDS, STATE_KEY, todayISO, nextMidnight, emptyState, freshOrEmpty } from './shared/games.js';
+import {
+  GAME_IDS, STATE_KEY, PREFS_KEY, todayISO, nextMidnight, emptyState, freshOrEmpty, normalizePrefs, visibleGames,
+} from './shared/games.js';
+import { HISTORY_KEY, dayEntry, withDay, streaks } from './shared/history.js';
 import { signIn, signOut, currentUser, isFirebaseConfigured } from './shared/firebase.js';
-import { ensureProfile, pushDailyStats, addFriend, removeFriend, getLeaderboard, deleteAccount } from './shared/social.js';
+import { ensureProfile, pushDailyStats, addFriend, removeFriend, getLeaderboard, getFriendResults, deleteAccount } from './shared/social.js';
 
 const ALARM = 'midnight-reset';
 
@@ -21,6 +24,34 @@ async function readState() {
   return state;
 }
 
+/** The user's list settings (order + hidden games), synced across their Chrome profiles. */
+async function readPrefs() {
+  const { [PREFS_KEY]: prefs } = await chrome.storage.sync.get(PREFS_KEY);
+  return normalizePrefs(prefs);
+}
+
+async function readHistory() {
+  const { [HISTORY_KEY]: history } = await chrome.storage.local.get(HISTORY_KEY);
+  return history || {};
+}
+
+/** Mirror today's state into the history (call inside serialize()). */
+async function recordHistory(state) {
+  const tracked = visibleGames(await readPrefs()).map((g) => g.id);
+  const history = withDay(await readHistory(), state.date, dayEntry(state, tracked));
+  await chrome.storage.local.set({ [HISTORY_KEY]: history });
+}
+
+/** Everything the Friends sync needs: today's state, the tracked games and the streak. */
+async function snapshot(state) {
+  const [prefs, history] = await Promise.all([readPrefs(), readHistory()]);
+  return {
+    state,
+    tracked: visibleGames(prefs).map((g) => g.id),
+    streak: streaks(history).current,
+  };
+}
+
 /** Load today's state, wiping it first if it's from a previous day. */
 function ensureFresh() {
   return serialize(async () => {
@@ -33,25 +64,59 @@ function ensureFresh() {
   });
 }
 
+/**
+ * A result detail from a content script: { summary: "4/6", grid: "🟩🟨⬛…" }.
+ * Kept short, and any line with letters is dropped, so no answers can slip through.
+ */
+function cleanDetail(d) {
+  if (!d || typeof d !== 'object') return null;
+  const summary = typeof d.summary === 'string' ? d.summary.trim().slice(0, 40) : '';
+  const grid = typeof d.grid === 'string'
+    ? d.grid.split('\n').map((l) => l.trim()).filter((l) => l && !/[A-Za-z]/.test(l)).slice(0, 12).join('\n').slice(0, 400)
+    : '';
+  return summary || grid ? { summary, grid } : null;
+}
+
 function setGame(gameId, completed, meta = {}) {
   return serialize(async () => {
     const state = freshOrEmpty(await readState());
     const prev = state.games[gameId];
     if (completed) {
-      // Keep the original completion time if a tab re-reports.
-      if (prev?.completed && meta.source !== 'manual') return state;
-      state.games[gameId] = {
-        completed: true,
-        result: meta.result || 'done',
-        source: meta.source || 'unknown',
-        at: Date.now(),
-      };
+      const detail = cleanDetail(meta.detail);
+      if (prev?.completed && meta.source !== 'manual') {
+        // Already ticked: keep the original time, but take a result detail if this
+        // report has one we don't (a Share click always wins, it's the game's own summary).
+        if (!detail || (prev.detail && meta.source !== 'share')) return state;
+        prev.detail = detail;
+        if (meta.result === 'win' || meta.result === 'fail') prev.result = meta.result;
+      } else {
+        state.games[gameId] = {
+          completed: true,
+          result: meta.result || 'done',
+          source: meta.source || 'unknown',
+          at: Date.now(),
+          ...(detail && { detail }),
+        };
+      }
     } else {
       delete state.games[gameId];
     }
     await chrome.storage.local.set({ [STATE_KEY]: state });
+    await recordHistory(state);
     syncStats(state);
     return state;
+  });
+}
+
+function setPrefs(prefs) {
+  return serialize(async () => {
+    const clean = normalizePrefs(prefs);
+    await chrome.storage.sync.set({ [PREFS_KEY]: clean });
+    const state = freshOrEmpty(await readState());
+    await recordHistory(state); // today's "tracked" list changed
+    updateBadge(state, clean);
+    syncStats(state);
+    return clean;
   });
 }
 
@@ -61,7 +126,9 @@ function setGame(gameId, completed, meta = {}) {
 // A failed push is retried on the next change or the next popup open.
 function syncStats(state) {
   if (!isFirebaseConfigured()) return;
-  pushDailyStats(state).catch((e) => console.warn('[DailyTracker] stats sync failed:', e.message));
+  snapshot(state)
+    .then(pushDailyStats)
+    .catch((e) => console.warn('[DailyTracker] stats sync failed:', e.message));
 }
 
 // --- Midnight reset ---------------------------------------------------------
@@ -100,7 +167,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: false });
         return false;
       }
-      setGame(msg.gameId, true, { result: msg.result, source: msg.source })
+      setGame(msg.gameId, true, { result: msg.result, source: msg.source, detail: msg.detail })
         .then(() => sendResponse({ ok: true }))
         .catch((e) => sendResponse({ ok: false, error: String(e) }));
       return true; // async response
@@ -114,6 +181,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     case 'GET_STATE': {
       ensureFresh().then((state) => sendResponse(state));
+      return true;
+    }
+    case 'SET_PREFS': {
+      // From the popup's "Edit list" mode: { order, hidden }.
+      setPrefs(msg.prefs).then((prefs) => sendResponse({ ok: true, data: prefs }));
       return true;
     }
 
@@ -152,10 +224,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     case 'GET_LEADERBOARD':
       respond(sendResponse, async () => {
-        const state = await ensureFresh();
-        syncStats(state); // cheap catch-up in case an earlier push failed
-        return getLeaderboard(state);
+        const snap = await snapshot(await ensureFresh());
+        pushDailyStats(snap).catch(() => {}); // cheap catch-up in case an earlier push failed
+        return getLeaderboard(snap);
       });
+      return true;
+
+    case 'GET_FRIEND_RESULTS':
+      // A friend's results for today, unlocked per game only if I've finished it too.
+      respond(sendResponse, async () => getFriendResults(msg.uid, await snapshot(await ensureFresh())));
       return true;
   }
   return false;
@@ -183,16 +260,18 @@ function friendlyError(e) {
 }
 
 // --- Badge ------------------------------------------------------------------
-function updateBadge(state) {
+function updateBadge(state, prefs) {
   const s = freshOrEmpty(state);
-  const left = GAMES.filter((g) => !s.games[g.id]?.completed).length;
+  const left = visibleGames(prefs).filter((g) => !s.games[g.id]?.completed).length;
   chrome.action.setBadgeText({ text: left === 0 ? '✓' : String(left) });
   chrome.action.setBadgeBackgroundColor({ color: left === 0 ? '#16a34a' : '#3f3f46' });
   chrome.action.setBadgeTextColor?.({ color: '#ffffff' });
 }
 
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes[STATE_KEY]) updateBadge(changes[STATE_KEY].newValue);
+chrome.storage.onChanged.addListener(async (changes, area) => {
+  if (area === 'local' && changes[STATE_KEY]) updateBadge(changes[STATE_KEY].newValue, await readPrefs());
+  // Prefs changed on another computer (chrome.storage.sync).
+  if (area === 'sync' && changes[PREFS_KEY]) updateBadge(await readState(), normalizePrefs(changes[PREFS_KEY].newValue));
 });
 
-readState().then(updateBadge);
+Promise.all([readState(), readPrefs()]).then(([state, prefs]) => updateBadge(state, prefs));

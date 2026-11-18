@@ -12,6 +12,11 @@ service cloud.firestore {
       return signedIn() &&
         exists(/databases/$(database)/documents/users/$(owner)/friends/$(request.auth.uid));
     }
+    // True when the requester has `game` ticked in their own stats for `date`.
+    function iFinished(date, game) {
+      let mine = /databases/$(database)/documents/users/$(request.auth.uid)/dailyStats/$(date);
+      return exists(mine) && game in get(mine).data.completed;
+    }
 
     match /users/{uid} {
       allow read: if isMe(uid) || addedMe(uid);
@@ -25,12 +30,27 @@ service cloud.firestore {
       }
 
       // Daily progress: visible to the owner and anyone the owner has added.
+      // Holds only which games are done and when, never scores.
       match /dailyStats/{date} {
         allow read: if isMe(uid) || addedMe(uid);
         allow write: if isMe(uid)
           && request.resource.data.count is int
           && request.resource.data.count >= 0
           && request.resource.data.count <= 20;
+
+        // Per-game result (score + emoji grid). A friend can read it only if they've
+        // finished the same game on the same day, so nobody gets spoiled.
+        match /results/{game} {
+          allow read: if isMe(uid) || (addedMe(uid) && iFinished(date, game));
+          allow create, update: if isMe(uid)
+            && request.resource.data.keys().hasOnly(['game', 'result', 'summary', 'grid', 'at'])
+            && request.resource.data.game == game
+            && request.resource.data.summary is string
+            && request.resource.data.summary.size() <= 40
+            && request.resource.data.grid is string
+            && request.resource.data.grid.size() <= 1000;
+          allow delete: if isMe(uid);
+        }
       }
     }
 

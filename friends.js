@@ -1,4 +1,5 @@
-// Friends tab: sign-in, leaderboard, add/remove friends.
+// Friends tab: sign-in, leaderboard, add/remove friends, and each friend's results
+// (click a friend to expand; a game's score only shows once you've finished it too).
 // All network work happens in the service worker. This file only sends messages and renders.
 // Names and photos come from other users, so they're only ever set via textContent / img.src.
 
@@ -51,14 +52,99 @@ function skeleton() {
   board.replaceChildren(...[0, 1, 2].map(() => Object.assign(document.createElement('li'), { className: 'skeleton' })));
 }
 
+// ---------- Friend results ----------
+let lastBoard = null;     // last leaderboard data, for re-rendering on expand/collapse
+let expandedUid = null;   // friend whose results are open
+const resultsCache = new Map(); // uid -> { date, games: [...] }, so re-renders don't flash
+
+const timeFmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+const RESULT_LABEL = { win: 'Solved', fail: "Didn't get it", done: 'Finished' };
+
+function toggleFriend(uid) {
+  expandedUid = expandedUid === uid ? null : uid;
+  if (lastBoard) renderBoard(lastBoard);
+  const row = $('leaderboard').querySelector('li.friend.open');
+  row?.focus();
+}
+
+function resultsRow(friend) {
+  const li = document.createElement('li');
+  li.className = 'results';
+  li.dataset.uid = friend.uid;
+  fillResults(li, friend, resultsCache.get(friend.uid));
+  loadResults(friend);
+  return li;
+}
+
+async function loadResults(friend) {
+  const res = await send({ type: 'GET_FRIEND_RESULTS', uid: friend.uid });
+  const li = [...$('leaderboard').querySelectorAll('li.results')].find((el) => el.dataset.uid === friend.uid);
+  if (!res?.ok) {
+    if (li) fillResults(li, friend, null, res?.error || "Couldn't load results");
+    return;
+  }
+  resultsCache.set(friend.uid, res.data);
+  if (li) fillResults(li, friend, res.data);
+}
+
+function fillResults(li, friend, data, error) {
+  const note = (text) => Object.assign(document.createElement('p'), { className: 'res-note', textContent: text });
+  if (error) return li.replaceChildren(note(error));
+  if (!data) return li.replaceChildren(note('Loading…'));
+  const firstName = friend.displayName.split(/\s+/)[0] || friend.displayName;
+  if (!data.games.length) return li.replaceChildren(note(`${firstName} hasn't finished a game yet today.`));
+
+  const items = [];
+  for (const r of data.games) {
+    const g = GAMES.find((x) => x.id === r.id);
+    if (!g) continue;
+    const item = document.createElement('div');
+    item.className = `res${r.locked ? ' locked' : ''}`;
+    item.style.setProperty('--c', g.color);
+
+    const dot = Object.assign(document.createElement('span'), { className: 'res-dot' });
+    const name = Object.assign(document.createElement('span'), { className: 'res-name', textContent: g.name });
+    const score = document.createElement('span');
+    score.className = 'res-score';
+
+    if (r.locked) {
+      // Spoiler guard: no score until I've finished this one myself.
+      const play = Object.assign(document.createElement('button'), {
+        type: 'button',
+        className: 'res-play',
+        textContent: 'Play it to see',
+        title: `Finish today's ${g.name} to see ${firstName}'s result`,
+      });
+      play.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chrome.tabs.create({ url: g.url });
+        window.close();
+      });
+      score.append(play);
+    } else {
+      score.append(r.summary || RESULT_LABEL[r.result] || 'Finished');
+      if (r.at) score.append(Object.assign(document.createElement('small'), { textContent: ` · ${timeFmt.format(r.at)}` }));
+    }
+    item.append(dot, name, score);
+
+    if (!r.locked && r.grid) {
+      item.append(Object.assign(document.createElement('pre'), { className: 'res-grid', textContent: r.grid }));
+    }
+    items.push(item);
+  }
+  li.replaceChildren(...items);
+}
+
 function renderBoard(data) {
+  lastBoard = data;
+  if (expandedUid && !data.rows.some((r) => r.uid === expandedUid && !r.isMe)) expandedUid = null;
   const board = $('leaderboard');
   const nodes = [];
   let rank = 0, prevKey = null;
 
   data.rows.forEach((r, i) => {
-    // Shared rank for exact ties on count (and finish time).
-    const key = `${r.count}:${r.count ? r.lastAt : 0}`;
+    // Shared rank for exact ties on count, share of their list, and finish time.
+    const key = `${r.count}:${r.total}:${r.count ? r.lastAt : 0}`;
     if (key !== prevKey) rank = i + 1;
     prevKey = key;
 
@@ -78,10 +164,18 @@ function renderBoard(data) {
     nm.textContent = r.displayName;
     nameRow.append(nm);
     if (r.isMe) nameRow.append(Object.assign(document.createElement('span'), { className: 'you-pill', textContent: 'YOU' }));
+    if (r.streak > 1) {
+      nameRow.append(Object.assign(document.createElement('span'), {
+        className: 'streak-pill',
+        textContent: `🔥${r.streak}`,
+        title: `${r.streak}-day streak`,
+      }));
+    }
 
+    // One dot per game in *their* list (people can hide games they don't play).
     const dots = document.createElement('span');
     dots.className = 'dots';
-    for (const g of GAMES) {
+    for (const g of GAMES.filter((x) => (r.tracked || []).includes(x.id))) {
       const d = document.createElement('span');
       const on = r.completed.includes(g.id);
       d.className = `dot${on ? ' on' : ''}`;
@@ -93,12 +187,32 @@ function renderBoard(data) {
 
     const score = document.createElement('span');
     score.className = `score${r.count ? '' : ' zero'}`;
-    score.append(String(r.count), Object.assign(document.createElement('small'), { textContent: `/${data.total}` }));
+    score.append(String(r.count), Object.assign(document.createElement('small'), { textContent: `/${r.total}` }));
     if (r.error) score.title = "Couldn't load";
 
     li.append(rk, avatar(r), who, score);
-    if (!r.isMe) li.append(removeButton(r));
+    if (!r.isMe) {
+      // Friend rows expand to show their results for the games I've also finished.
+      const open = expandedUid === r.uid;
+      li.classList.add('friend');
+      li.classList.toggle('open', open);
+      li.tabIndex = 0;
+      li.setAttribute('role', 'button');
+      li.setAttribute('aria-expanded', String(open));
+      li.title = `See ${r.displayName}'s results`;
+      const chev = document.createElement('span');
+      chev.className = 'chev';
+      chev.setAttribute('aria-hidden', 'true');
+      li.append(chev, removeButton(r));
+      li.addEventListener('click', (e) => { if (!e.target.closest('.remove')) toggleFriend(r.uid); });
+      li.addEventListener('keydown', (e) => {
+        if (e.target !== li || (e.key !== 'Enter' && e.key !== ' ')) return;
+        e.preventDefault();
+        toggleFriend(r.uid);
+      });
+    }
     nodes.push(li);
+    if (!r.isMe && expandedUid === r.uid) nodes.push(resultsRow(r));
   });
 
   if (data.rows.length === 1) {
@@ -125,7 +239,8 @@ function removeButton(friend) {
   b.textContent = '×';
   b.title = `Remove ${friend.displayName}`;
   b.setAttribute('aria-label', `Remove ${friend.displayName}`);
-  b.addEventListener('click', async () => {
+  b.addEventListener('click', async (e) => {
+    e.stopPropagation();
     b.disabled = true;
     const res = await send({ type: 'REMOVE_FRIEND', uid: friend.uid });
     if (!res?.ok) { setMsg($('add-msg'), res?.error || 'Could not remove', 'error'); b.disabled = false; return; }
@@ -163,6 +278,8 @@ async function refresh() {
 async function init(force = false) {
   if (loaded && !force) return refresh();
   loaded = false;
+  expandedUid = null;
+  resultsCache.clear();
   const res = await send({ type: 'AUTH_STATE' });
   const st = res?.data;
   if (!st?.configured) return show('unconfigured');

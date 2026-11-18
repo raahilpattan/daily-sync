@@ -17,4 +17,15 @@ DailyTracker.register('strands', (t) => {
   }
 
   return null;
+}, {
+  // Share text looks like "Strands #250 / “Theme” / 🔵🔵🟡🔵 / 💡🔵🔵".
+  // 🔵 is a theme word, 🟡 the spangram, 💡 a hint.
+  // The theme line has letters, so emojiGrid() drops it (no spoilers).
+  parseShare(text, t) {
+    if (!/strands/i.test(text)) return null;
+    const grid = t.emojiGrid(text);
+    if (!grid) return null;
+    const hints = t.pictos(grid).filter((c) => c === '💡').length;
+    return { result: 'win', summary: hints ? `${hints} hint${hints === 1 ? '' : 's'}` : 'No hints', grid };
+  },
 });
