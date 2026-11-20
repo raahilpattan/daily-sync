@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Daily Sync",
   "short_name": "Daily Sync",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Automatically track your daily puzzle progress, stay organized, and compare results with friends.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqjsUsonQAeQKs4DgWajeQZZVNk1/HmFlMSo7QIFzz+0mtGKhcegMmBChX03hRV72Ld/L1qqqk8HOl9mtgleUFeSnYx513+54554asbdCtEWcAsISFggDKvDqCw4UBRxQCA9grl5hwF0/OP2Luurr/AETTihlORO2m3tM3flnbik9BrA+dkmZpyvhG8BCyS6mn6AILk7YJYcVqY8mzq+85UE21EByD/tQkUAzNI5aXBJbm5aNGPOWbOehwOPc8c64V6N40iB10UVmavJES4sDvJ7p4Yz7b+0p7n7ns6ohHmphygEhxe8TRZ1FFA+bB2I4Pf/bSGJkD4zWgEOlD1Vg8wIDAQAB",
   "permissions": ["storage", "alarms", "identity"],

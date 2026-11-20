@@ -6,7 +6,7 @@ DailyTracker.register('strands', (t) => {
   // any "complete/solved" flag dated today counts.
   // 👉 PATCH HERE with the exact key/field once confirmed via dgt-debug.
   const hit = t.scanAll(/strands/i, t);
-  if (hit) return hit;
+  if (hit) return { ...hit, result: 'win' }; // Strands can't be lost, so finished = solved
 
   // --- 2) DOM: completion screen ---------------------------------------------------
   // Finishing shows a results modal ("Share your results" / "Next puzzle in"), and

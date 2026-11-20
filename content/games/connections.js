@@ -8,10 +8,15 @@ DailyTracker.register('connections', (t) => {
   //    const s = t.get('nyt-connections-beta'); if (s?.puzzleComplete && t.isFresh(s, t.live)) ...
   for (const { key, value } of t.readKeys(/connections/i)) {
     if (!value || typeof value !== 'object') continue;
-    const status = t.genericStatus(value) ?? groupsStatus(value);
-    if (status && t.isFresh(value, t.live && key === t.changedKey)) {
-      return { completed: true, result: status, source: `storage:${key}` };
-    }
+    const generic = t.genericStatus(value);
+    const groups = groupsStatus(value);
+    if (!generic && !groups) continue;
+    if (!t.isFresh(value, t.live && key === t.changedKey)) continue;
+    // Mistakes/groups say how it actually went. A generic "win" is only trusted if
+    // nothing contradicts it, and is otherwise reported as plain "done" (shown as
+    // "Completed"), never as "Solved". Clicking Share gives the exact result.
+    const result = groups ?? (generic === 'fail' ? 'fail' : 'done');
+    return { completed: true, result, source: `storage:${key}` };
   }
 
   // --- 2) DOM: results screen ---------------------------------------------------
@@ -24,14 +29,16 @@ DailyTracker.register('connections', (t) => {
 
   return null;
 
-  // Heuristic: 4 found groups = solved; 0 mistakes remaining = out of lives.
+  // Heuristic: 0 mistakes remaining = out of lives (a loss, checked first, because NYT
+  // reveals the remaining groups when you lose); otherwise 4 found groups = solved.
   function groupsStatus(obj) {
-    let res = null;
+    let lost = false, won = false;
     t.walk(obj, (k, v) => {
-      if (/^(solvedcategories|groupsfound|solvedgroups|foundgroups)$/i.test(k) && Array.isArray(v) && v.length >= 4) res = 'win';
-      if (!res && /^mistakesremaining$/i.test(k) && v === 0) res = 'fail';
+      if (/^mistakesremaining$/i.test(k) && v === 0) lost = true;
+      if (/^(mistakes|mistakesmade|mistakecount)$/i.test(k) && v >= 4) lost = true;
+      if (/^(solvedcategories|groupsfound|solvedgroups|foundgroups)$/i.test(k) && Array.isArray(v) && v.length >= 4) won = true;
     });
-    return res;
+    return lost ? 'fail' : won ? 'win' : null;
   }
 }, {
   // Share text looks like "Connections / Puzzle #512 / 🟨🟨🟨🟨 / 🟩🟪🟩🟩 / …",

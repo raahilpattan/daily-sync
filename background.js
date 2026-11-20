@@ -84,11 +84,16 @@ function setGame(gameId, completed, meta = {}) {
     if (completed) {
       const detail = cleanDetail(meta.detail);
       if (prev?.completed && meta.source !== 'manual') {
-        // Already ticked: keep the original time, but take a result detail if this
-        // report has one we don't (a Share click always wins, it's the game's own summary).
-        if (!detail || (prev.detail && meta.source !== 'share')) return state;
-        prev.detail = detail;
-        if (meta.result === 'win' || meta.result === 'fail') prev.result = meta.result;
+        // Already ticked: keep the original time, but
+        //  • take a result detail if this report has one we don't (a Share click always
+        //    wins, it's the game's own summary), and
+        //  • let a definite win/fail correct an earlier guess, unless that came from Share.
+        const takeDetail = detail && (!prev.detail || meta.source === 'share');
+        const fixResult = (meta.result === 'win' || meta.result === 'fail') &&
+          meta.result !== prev.result && (prev.source !== 'share' || meta.source === 'share');
+        if (!takeDetail && !fixResult) return state;
+        if (takeDetail) prev.detail = detail;
+        if (fixResult) prev.result = meta.result;
       } else {
         state.games[gameId] = {
           completed: true,

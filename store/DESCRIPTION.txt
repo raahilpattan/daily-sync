@@ -1,0 +1,41 @@
+Daily Sync keeps a checklist of the daily puzzles you play and ticks each one off as you finish it, so you can see at a glance what's done and what's left. You can also compare results with friends without spoiling anything.
+
+It works with a handful of popular daily word, geography and trivia puzzles that you play in your browser.
+
+FEATURES
+
+Automatic tracking
+Play on each game's own website as usual. Daily Sync notices when you finish today's puzzle and ticks it off. Missed one, or played on your phone? Click the circle to mark it done yourself.
+
+Your day at a glance
+The toolbar badge shows how many puzzles you have left. Open the popup to see your progress, your score for each puzzle, and one-click links to the ones you haven't played yet.
+
+Fresh start every day
+Your checklist clears at midnight, ready for the next day's puzzles.
+
+Your list, your way
+Hide the puzzles you don't play and drag the rest into the order you like. Your progress and badge only count the ones you keep.
+
+Streaks and stats
+Keep your streak going! The Stats tab shows your current and best streak, a calendar of the days you played, and your average score for each puzzle.
+
+Friends leaderboard (optional)
+Sign in with Google, share your friend code, and add friends by code or email. Once you've added each other, you'll see a daily leaderboard of who has finished what, along with everyone's streak.
+
+Compare results, no spoilers
+Click a friend to see their score and emoji grid for each puzzle. Their result stays locked until you've finished that puzzle yourself, so nobody gets spoiled. Most scores are recorded automatically. For a few puzzles, click the game's own Share button to record yours.
+
+PRIVACY
+• Tracking happens entirely in your browser, and the extension only runs on the supported game websites.
+• Nothing is uploaded unless you sign in for Friends. If you do, your name, email, photo, friend list, daily results, streak and which puzzles are in your list are stored so that friends you've both added can see them.
+• Only spoiler-free scores and emoji grids are saved, never words or answers.
+• You can delete your account and all its data from the extension at any time.
+Privacy policy: https://raahilpattan.github.io/daily-sync/privacy.html
+
+GETTING STARTED
+1. Install Daily Sync and pin it to your toolbar.
+2. Play your daily puzzles as usual.
+3. Click the icon to see what's done and what's left.
+4. Optionally, open the Friends tab and sign in to compare results.
+
+Daily Sync is an independent, open-source project. It is not affiliated with or endorsed by the makers of any of the supported games.

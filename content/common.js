@@ -98,30 +98,35 @@
   }
 
   // ---- Generic status sniffing ----------------------------------------------
-  const WIN = /^(win|won|winner|solved|complete|completed|finished|success|victory)$/i;
-  const FAIL = /^(fail|failed|failure|lose|lost|loss|gameover|game_over)$/i;
+  // Three outcomes: 'win', 'fail', and 'done' (the game is over, but we can't tell how).
+  // "complete"/"finished"/"game over" only mean the game ended: a lost game is complete too.
+  const WIN = /^(win|won|winner|solved|success|victory)$/i;
+  const FAIL = /^(fail|failed|failure|lose|lost|loss)$/i;
+  const DONE = /^(complete|completed|finished|done|over|ended|gameover|game_over)$/i;
   const STATUS_KEY = /^(status|gamestatus|game_status|state|gamestate|result|outcome|winstate)$/i;
-  const BOOL_KEY = /^(solved|issolved|completed|iscompleted|iscomplete|complete|won|iswon|haswon|isfinished|finished|gamewon|puzzlecomplete|puzzlesolved)$/i;
+  const BOOL_WIN = /^(won|iswon|haswon|gamewon|puzzlesolved|issolved|solved)$/i;
+  const BOOL_DONE = /^(completed|iscompleted|iscomplete|complete|isfinished|finished|puzzlecomplete|gameover|isgameover)$/i;
 
   function normalizeStatus(s) {
     if (typeof s !== 'string') return null;
     if (WIN.test(s)) return 'win';
     if (FAIL.test(s)) return 'fail';
+    if (DONE.test(s)) return 'done';
     return null;
   }
+
+  // When signals disagree, a loss beats a win (a lost game can still have per-group
+  // "solved: true" flags), and either beats a bare "it's over".
+  const RANK = { done: 1, win: 2, fail: 3 };
 
   /** Looks for status-ish fields ("status": "WIN", "solved": true, ...) anywhere in obj. */
   function genericStatus(obj) {
     let result = null;
+    const take = (s) => { if (s && (!result || RANK[s] > RANK[result])) result = s; };
     walk(obj, (k, v) => {
-      if (result === 'win') return;
-      if (STATUS_KEY.test(k)) {
-        const s = normalizeStatus(v);
-        if (s === 'win') result = 'win';
-        else if (s === 'fail' && !result) result = 'fail';
-      } else if (BOOL_KEY.test(k) && v === true) {
-        result = 'win';
-      }
+      if (STATUS_KEY.test(k)) take(normalizeStatus(v));
+      else if (v === true && BOOL_WIN.test(k)) take('win');
+      else if (v === true && BOOL_DONE.test(k)) take('done');
     });
     return result;
   }

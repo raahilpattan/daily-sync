@@ -18,7 +18,7 @@ Copy-paste material for the Developer Dashboard (https://chrome.google.com/webst
 
 **Category:** Fun (alternative: Productivity)
 
-**Description:** paste exactly this. **Don't name any of the games.** Google rejected both a bulleted list of game names and a single sentence naming them as "keyword spam" (violation *Yellow Argon*, Nov 2026). Keep it generic, e.g. "daily word, geography and trivia puzzles".
+**Description:** copy it from [`store/DESCRIPTION.txt`](DESCRIPTION.txt) (open it, Ctrl+A, Ctrl+C), or from the block below. They're the same text. **Don't name any of the games.** Google rejected both a bulleted list of game names and a single sentence naming them as "keyword spam" (violation *Yellow Argon*, Nov 2026). Keep it generic, e.g. "daily word, geography and trivia puzzles".
 ```
 Daily Sync keeps a checklist of the daily puzzles you play and ticks each one off as you finish it, so you can see at a glance what's done and what's left. You can also compare results with friends without spoiling anything.
 
@@ -49,7 +49,7 @@ Click a friend to see their score and emoji grid for each puzzle. Their result s
 
 PRIVACY
 • Tracking happens entirely in your browser, and the extension only runs on the supported game websites.
-• Nothing is uploaded unless you sign in for Friends. If you do, your name, email, photo, friend list and daily results are stored so that friends you've both added can see them.
+• Nothing is uploaded unless you sign in for Friends. If you do, your name, email, photo, friend list, daily results, streak and which puzzles are in your list are stored so that friends you've both added can see them.
 • Only spoiler-free scores and emoji grids are saved, never words or answers.
 • You can delete your account and all its data from the extension at any time.
 Privacy policy: https://raahilpattan.github.io/daily-sync/privacy.html
@@ -64,6 +64,9 @@ Daily Sync is an independent, open-source project. It is not affiliated with or 
 ```
 
 **Screenshots** (1280×800), in this order: `store/screenshot-games.png`, `store/screenshot-stats.png`, `store/screenshot-friends.png`. Their captions don't name any games (same keyword-spam rule as the description).
+
+**Small promo tile** (440×280, 24-bit PNG): `store/promo-small.png`
+**Marquee promo tile** (1400×560, 24-bit PNG, optional): `store/promo-marquee.png`
 
 **Icon:** `icons/icon128.png`, the DS logo with the store's recommended 16px transparent padding. All icon sizes are generated from `store/logo-source.jpg` by `scripts/make-icons.ps1`.
 
